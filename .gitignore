@@ -1,2 +1,4 @@
 .*
 !.envrc
+terraform.tfstate.d
+rama.tfvars

@@ -4,7 +4,7 @@ username = "ec2-user"
 vpc_security_group_ids = ["sg-12345"]
 
 rama_source_path    = "/absolute/path/to/rama.zip"
-zookeeper_url   = "https://dlcdn.apache.org/zookeeper/zookeeper-3.8.4/apache-zookeeper-3.8.4-bin.tar.gz"
+zookeeper_url   = "https://dlcdn.apache.org/zookeeper/zookeeper-3.8.5/apache-zookeeper-3.8.5-bin.tar.gz"
 
 ami_id  = "ami-56789"
 

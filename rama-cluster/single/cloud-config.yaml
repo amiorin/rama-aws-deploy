@@ -4,20 +4,27 @@ write_files:
   - path: ${supervisor_service_file_destination}
     content: ${base64encode(supervisor_service_file_contents)}
     encoding: b64
-    owner: ${username}:${username}
 
 # files for conductor
   - path: ${conductor_service_file_destination}
     content: ${base64encode(conductor_service_file_contents)}
     encoding: b64
-    owner: ${username}:${username}
 %{ if license_file_contents != "" }
   - path: /data/rama/license/rama.license
     content: ${base64encode(license_file_contents)}
     encoding: b64
-    owner: ${username}:${username}
 %{ endif }
   - path: /data/rama/unpack-rama.sh
     content: ${base64encode(unpack_rama_contents)}
     encoding: b64
-    owner: ${username}:${username}
+
+runcmd:
+  - mkdir -p /data/rama/license
+  - chown -R ${username}:${username} /data/rama
+  - chown ${username}:${username} ${supervisor_service_file_destination}
+  - chown ${username}:${username} ${conductor_service_file_destination}
+  - chown ${username}:${username} /data/rama/unpack-rama.sh
+
+package_update: true
+packages:
+  - java-21-amazon-corretto-devel
