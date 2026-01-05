@@ -1,10 +1,2 @@
-rama-cluster/single/.terraform
-rama-cluster/single/.terraform.lock.hcl
-rama-cluster/single/terraform.tfstate.d
-rama-cluster/multi/.terraform
-rama-cluster/multi/.terraform.lock.hcl
-rama-cluster/multi/terraform.tfstate.d
-*zip
-license.edn
-rama.tfvars
-.idea
+.*
+!.envrc

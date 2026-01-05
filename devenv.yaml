@@ -1,0 +1,4 @@
+# See https://devenv.sh/reference/yaml-options/
+# Terraform adopted a non-free license (BSL 1.1) in August 2023.
+# To use versions 1.6+, you must allow unfree packages.
+allowUnfree: true
