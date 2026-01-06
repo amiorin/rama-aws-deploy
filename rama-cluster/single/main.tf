@@ -40,14 +40,26 @@ variable "private_ssh_key" {
   default = null
 }
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.1.0"
+    }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "~> 2.2.0"
+    }
+  }
+}
+
 provider "aws" {
   region      = var.region
   max_retries = 25
-  version     = "~> 4.1.0"
 }
 
 provider "cloudinit" {
-  version = "~> 2.2.0"
+  # Configuration options go here
 }
 
 locals {
