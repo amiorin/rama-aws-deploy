@@ -1,0 +1,4 @@
+{:tasks
+ {:requires ([clojure.string :as str])
+  render {:doc "render the dist folder"
+          :task (shell {:dir ".big-config"} (format "bb render %s" (str/join " " *command-line-args*)))}}}

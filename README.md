@@ -10,11 +10,35 @@ First read the original [README.md](README-upstream.md)
 ## BigConfig
 How to add BigConfig to a Terraform project. The commits of the repo are in the format `step #: [description of the change]`. Start from `step 1` to understand how to add BigConfig to a Terraform project.
 
+### Requirements
+* babashka 1.12.210 or above (from asdf or brew for example, nix lastest version is only 1.12.209)
+
 ### Step 6
 Create a BigConfig project in `.big-config` using the Terraform template.
 
 ```sh
 clojure -Tbig-config terraform :target-dir .big-config
+```
+
+### Step 7
+There is a bug in the Terraform template. The directory `resources/alpha/` is not created automatically. Even if the template is only using functions to generate configuration files, the directory is required anyway.
+
+* add `rama-cluster/single/main.tf` inside `resources/alpha` to the list of configuration files. For now it is copied verbatim. Later it will be transform into a function.
+* remove the lock properties for now.
+* remove `data-fn` and `kw->content` for now. The `main.tf` is just copied verbatim.
+* add a proxy `bb.edn` to be able to invoke `.big-config/bb.edn` from the root of the project.
+* make the `transform` just a verbatim copy of the `root` folder.
+* change the `target-dir` to be the parent directory of `.big-config`.
+
+```sh
+# from
+bin/rama-cluster.sh plan --singleNode cesar-ford
+
+# to
+bb render exec -- alpha prod bin/rama-cluster.sh plan --singleNode cesar-ford
+
+# Using the alias to achieve zero-cost build step (https://bigconfig.it/start-here/getting-started/#zero-cost-build-step)
+alias rama-cluster="bb render exec -- alpha prod bin/rama-cluster.sh"
 ```
 
 ## Customizations
