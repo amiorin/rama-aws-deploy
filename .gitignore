@@ -1,5 +1,6 @@
 .*
 !.envrc
 !.big-config
+!.big-config/resources/alpha/root/.keep
 terraform.tfstate.d
 rama.tfvars

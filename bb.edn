@@ -1,4 +1,7 @@
 {:tasks
  {:requires ([clojure.string :as str])
-  render {:doc "render the dist folder"
+  tidy {:doc "tidy clojure files"
+        :task (do (shell {:dir ".big-config"} "clojure-lsp clean-ns")
+                  (shell {:dir ".big-config"} "clojure-lsp format"))}
+  render {:doc "render the configuration files"
           :task (shell {:dir ".big-config"} (format "bb render %s" (str/join " " *command-line-args*)))}}}

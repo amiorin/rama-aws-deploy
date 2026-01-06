@@ -1,14 +1,11 @@
 (ns alpha
   (:require
    [big-config :as bc]
-   [big-config.lock :as lock]
    [big-config.render :as render]
    [big-config.run :as run]
    [big-config.step :as step]
-   [big-config.utils :refer [deep-merge sort-nested-map]]
-   [big-tofu.core :refer [add-suffix construct]]
-   [big-tofu.create :as create]
-   [cheshire.core :as json]))
+   [cheshire.core :as json]
+   [single :refer [content]]))
 
 (defn run-steps [s opts & step-fns]
   (let [{:keys [module profile]} (step/parse-module-and-profile s)
@@ -20,6 +17,9 @@
                                           :target-dir dir
                                           :overwrite true
                                           :transform [["root"
+                                                       :raw]
+                                                      ['alpha/render "rama-cluster/single"
+                                                       {:single "main.tf.json"}
                                                        :raw]]}]})]
     (if step-fns
       (apply step/run-steps s opts step-fns)
@@ -27,3 +27,7 @@
 
 (comment
   (run-steps "render exec -- alpha prod bin/rama-cluster.sh plan --singleNode cesar-ford" {::bc/env :repl}))
+
+(defn render [kw _data]
+  (case kw
+    :single (json/generate-string content {:pretty true})))

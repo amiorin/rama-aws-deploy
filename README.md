@@ -1,6 +1,11 @@
 First read the original [README.md](README-upstream.md)
 
 - [BigConfig](#bigconfig)
+  - [Requirements](#requirements)
+  - [Step 1-5](#step-1-5)
+  - [Step 6](#step-6)
+  - [Step 7](#step-7)
+  - [Step 8](#step-8)
 - [Customizations](#customizations)
   - [AWS](#aws)
   - [Tailscale](#tailscale)
@@ -12,6 +17,9 @@ How to add BigConfig to a Terraform project. The commits of the repo are in the 
 
 ### Requirements
 * babashka 1.12.210 or above (from asdf or brew for example, nix lastest version is only 1.12.209)
+
+### Step 1-5
+Preparation steps.
 
 ### Step 6
 Create a BigConfig project in `.big-config` using the Terraform template.
@@ -40,6 +48,15 @@ bb render exec -- alpha prod bin/rama-cluster.sh plan --singleNode cesar-ford
 # Using the alias to achieve zero-cost build step (https://bigconfig.it/start-here/getting-started/#zero-cost-build-step)
 alias rama-cluster="bb render exec -- alpha prod bin/rama-cluster.sh"
 ```
+
+### Step 8
+Now we can convert the `main.tf` to [single.clj](.big-config/src/single.clj)
+
+```sh
+cat  rama-cluster/single/main.tf | hcl2json | jet --from json --to edn --pretty --keywordize > .big-config/src/single.clj
+```
+
+Then we can remove the old `main.tf` and generate the `main.tf.json` programmatically. The conversion from HCL to EDN is no bullet proof and Terraform will give us some syntax errors that we will fix in step 9. After we have a working version of `main.tf.json` we will be able to refactor without running Terraform anymore.
 
 ## Customizations
 These are the steps if you want to use AWS, Tailscale, SSH Agent, and Caddy with Rama.
