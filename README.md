@@ -10,6 +10,13 @@ First read the original [README.md](README-upstream.md)
 ## BigConfig
 How to add BigConfig to a Terraform project. The commits of the repo are in the format `step #: [description of the change]`. Start from `step 1` to understand how to add BigConfig to a Terraform project.
 
+### Step 6
+Create a BigConfig project in `.big-config` using the Terraform template.
+
+```sh
+clojure -Tbig-config terraform :target-dir .big-config
+```
+
 ## Customizations
 These are the steps if you want to use AWS, Tailscale, SSH Agent, and Caddy with Rama.
 
@@ -28,7 +35,7 @@ These are the steps if you want to use AWS, Tailscale, SSH Agent, and Caddy with
 * Stop "Change Source / destination check" of the t4g.nano
 
 ### Variables
-```
+```hcl
 # Required
 region                 = "us-west-2"
 username               = "ec2-user"
@@ -55,7 +62,7 @@ use_private_ip      = true
 ### Caddy
 Given the ip address 172.31.43.17 and the cluster name `cesar-ford`, you can install the monitoring software and access it through Caddy. `~/.rama` must be in your path.
 
-```
+```sh
 rama-cesar-ford deploy --action launch --systemModule monitoring --tasks 4 --threads 2 --workers 1
 caddy reverse-proxy --to http://172.31.43.17:8888
 open -a "Google Chrome" https://localhost

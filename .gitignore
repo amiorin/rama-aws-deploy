@@ -1,4 +1,5 @@
 .*
 !.envrc
+!.big-config
 terraform.tfstate.d
 rama.tfvars
