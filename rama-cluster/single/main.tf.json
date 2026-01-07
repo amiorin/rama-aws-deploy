@@ -53,7 +53,7 @@
           } ],
           "local-exec" : [ {
             "command" : "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
-            "when" : "${create}"
+            "when" : "create"
           } ],
           "remote-exec" : [ {
             "inline" : [ "ls" ]
@@ -132,47 +132,47 @@
   } ],
   "variable" : {
     "ami_id" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "rama_source_path" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "key_name" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "license_source_path" : [ {
       "default" : "",
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "instance_type" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "username" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "private_ssh_key" : [ {
       "default" : null,
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "region" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "use_private_ip" : [ {
       "default" : false,
-      "type" : "${bool}"
+      "type" : "bool"
     } ],
     "volume_size_gb" : [ {
       "default" : 100,
-      "type" : "${number}"
+      "type" : "number"
     } ],
     "cluster_name" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ],
     "vpc_security_group_ids" : [ {
-      "type" : "${list(string)}"
+      "type" : "list(string)"
     } ],
     "zookeeper_url" : [ {
-      "type" : "${string}"
+      "type" : "string"
     } ]
   }
 }

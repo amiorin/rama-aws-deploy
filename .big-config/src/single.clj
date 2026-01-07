@@ -16,7 +16,7 @@
               :resource {:aws_instance {:rama [{:tags {:Name "${terraform.workspace}-rama"},
                                                 :provisioner {:file [{:content "${templatefile(\"../common/zookeeper/zookeeper.service\", {\n      username = var.username\n    })}",
                                                                       :destination "${local.home_dir}/zookeeper.service"}],                                                 :local-exec [{:command "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
-                                                                                                                                                                                          :when "${create}"}],
+                                                                                                                                                                                          :when "create"}],
                                                               :remote-exec [{:inline ["ls"]}
                                                                             {:inline ["cd /data/rama"
                                                                                       "chmod +x unpack-rama.sh"
@@ -52,16 +52,16 @@
                                                        :version "~> 4.1.0"},
                                                  :cloudinit {:source "hashicorp/cloudinit",
                                                              :version "~> 2.2.0"}}]}],
-              :variable {:ami_id [{:type "${string}"}],
-                         :rama_source_path [{:type "${string}"}],
-                         :key_name [{:type "${string}"}],
-                         :license_source_path [{:default "", :type "${string}"}],
-                         :instance_type [{:type "${string}"}],
-                         :username [{:type "${string}"}],
-                         :private_ssh_key [{:default nil, :type "${string}"}],
-                         :region [{:type "${string}"}],
-                         :use_private_ip [{:default false, :type "${bool}"}],
-                         :volume_size_gb [{:default 100, :type "${number}"}],
-                         :cluster_name [{:type "${string}"}],
-                         :vpc_security_group_ids [{:type "${list(string)}"}],
-                         :zookeeper_url [{:type "${string}"}]}})
+              :variable {:ami_id [{:type "string"}],
+                         :rama_source_path [{:type "string"}],
+                         :key_name [{:type "string"}],
+                         :license_source_path [{:default "", :type "string"}],
+                         :instance_type [{:type "string"}],
+                         :username [{:type "string"}],
+                         :private_ssh_key [{:default nil, :type "string"}],
+                         :region [{:type "string"}],
+                         :use_private_ip [{:default false, :type "bool"}],
+                         :volume_size_gb [{:default 100, :type "number"}],
+                         :cluster_name [{:type "string"}],
+                         :vpc_security_group_ids [{:type "list(string)"}],
+                         :zookeeper_url [{:type "string"}]}})

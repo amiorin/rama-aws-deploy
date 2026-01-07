@@ -8,8 +8,8 @@
    [single :refer [content]]))
 
 (defn run-steps [s opts & step-fns]
-  (let [{:keys [module profile]} (step/parse-module-and-profile s)
-        dir (format ".." profile module)
+  (let [{:keys [_module _profile]} (step/parse-module-and-profile s)
+        dir (format "..")
         opts (merge opts
                     {::run/shell-opts {:dir dir
                                        :extra-env {"AWS_PROFILE" "default"}}
