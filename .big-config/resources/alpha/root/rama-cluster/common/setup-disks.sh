@@ -14,8 +14,8 @@ if [ ! -z $DEVICE ] ; then
   mount /data
 fi
 
-USERNAME='ec2-user'
-if [ "$USERNAME" = 'ec2-user' ]; then
+USERNAME='{{username}}'
+if [ "$USERNAME" = '{{username}}' ]; then
   USERNAME="$1"
 fi
 

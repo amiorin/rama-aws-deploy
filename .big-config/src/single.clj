@@ -59,69 +59,72 @@
                    :zookeeper_url "https://dlcdn.apache.org/zookeeper/zookeeper-3.8.5/apache-zookeeper-3.8.5-bin.tar.gz"}]
     (malli-assert "RamaOpts" RamaOptsSchema rama-opts)))
 
-(def content {:data {:cloudinit_config {:rama_config [{:part [{:content "${templatefile(\"../common/setup-disks.sh\", {\n      username = var.username\n    })}",
-                                                               :content_type "text/x-shellscript"}
-                                                              {:content "${templatefile(\"./cloud-config.yaml\", {\n      username = var.username,\n\n      # conductor.service\n      conductor_service_name             = \"conductor\",\n      conductor_service_file_destination = \"${local.systemd_dir}/conductor.service\",\n      conductor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Conductor\",\n        command     = \"conductor\"\n      })\n      # rama.license\n      license_file_contents = var.license_source_path != \"\" ? file(var.license_source_path) : \"\",\n      # Manage rama.zip script\n      unpack_rama_contents = templatefile(\"../common/conductor/unpack-rama.sh\", {\n        username = var.username,\n      })\n\n      supervisor_service_file_destination = \"${local.systemd_dir}/supervisor.service\",\n      supervisor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Supervisor\"\n        command     = \"supervisor\"\n      })\n      service_name = \"supervisor\"\n    })}",
-                                                               :content_type "text/cloud-config"}]}]},
-                     :http {:myip [{:url "http://ipv4.icanhazip.com"}]}},
-              :locals [{:home_dir "/home/${var.username}",
-                        :systemd_dir "/etc/systemd/system",
-                        :vpc_security_group_ids "${var.vpc_security_group_ids}"}],
-              :output {:conductor_ui [{:value "http://%{if var.use_private_ip}${aws_instance.rama.private_ip}%{else}${aws_instance.rama.public_ip}%{endif}:8888"}],
-                       :ec2_console [{:value "https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#Instances:tag:Name=${var.cluster_name}-cluster-supervisor,${var.cluster_name}-cluster-conductor,${var.cluster_name}-cluster-zookeeper;instanceState=running;sort=desc:tag:Name"}],
-                       :rama_ip [{:value "${var.use_private_ip ? aws_instance.rama.private_ip : aws_instance.rama.public_ip}"}]},
-              :provider {:aws [{:max_retries 25, :region "${var.region}"}],
-                         :cloudinit [{}]},
-              :resource {:aws_instance {:rama [{:tags {:Name "${terraform.workspace}-rama"},
-                                                :provisioner {:file [{:content "${templatefile(\"../common/zookeeper/zookeeper.service\", {\n      username = var.username\n    })}",
-                                                                      :destination "${local.home_dir}/zookeeper.service"}]
-                                                              :local-exec [{:command "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
-                                                                            :when "create"}],
-                                                              :remote-exec [{:inline ["ls"]}
-                                                                            {:inline ["cd /data/rama"
-                                                                                      "chmod +x unpack-rama.sh"
-                                                                                      "./unpack-rama.sh"]}]},
-                                                :key_name "${var.key_name}",
-                                                :instance_type "${var.instance_type}",
-                                                :ami "${var.ami_id}",
-                                                :root_block_device [{:volume_size "${var.volume_size_gb}"}],
-                                                :vpc_security_group_ids "${local.vpc_security_group_ids}",
-                                                :connection [{:host "${var.use_private_ip ? self.private_ip : self.public_ip}",
-                                                              :private_key "${var.private_ssh_key != null ? file(var.private_ssh_key) : null}",
-                                                              :type "ssh",
-                                                              :user "${var.username}"}],
-                                                :user_data "${data.cloudinit_config.rama_config.rendered}"}]},
-                         :null_resource {:local [{:provisioner {:local-exec [{:command "${format(\n      \"cat <<\\\"EOF\\\" > \\\"%s\\\"\\n%s\\nEOF\",\n      \"/tmp/deployment.yaml\",\n      templatefile(\"../common/local.yaml\", {\n        zk_public_ip         = aws_instance.rama.public_ip\n        zk_private_ip        = aws_instance.rama.private_ip\n        conductor_public_ip  = aws_instance.rama.public_ip\n        conductor_private_ip = aws_instance.rama.private_ip\n      })\n    )}"}]}}],
-                                         :rama [{:connection [{:host "${var.use_private_ip ? aws_instance.rama.private_ip : aws_instance.rama.public_ip}",
-                                                               :private_key "${var.private_ssh_key != null ? file(var.private_ssh_key) : null}",
-                                                               :type "ssh",
-                                                               :user "${var.username}"}],
-                                                 :provisioner [{:file [{:destination "${local.home_dir}/setup.sh",
-                                                                        :source "../common/zookeeper/setup.sh"}]}
-                                                               {:remote-exec [{:inline ["chmod +x ${local.home_dir}/setup.sh"
-                                                                                        "${local.home_dir}/setup.sh ${var.zookeeper_url}"]}]}
-                                                               {:file [{:content "${templatefile(\"../common/zookeeper/zoo.cfg\", {\n      num_servers    = 1,\n      zk_private_ips = [aws_instance.rama.private_ip],\n      server_index   = 0\n      username       = var.username\n    })}",
-                                                                        :destination "${local.home_dir}/zookeeper/conf/zoo.cfg"}
-                                                                       {:content "${templatefile(\"../common/zookeeper/myid\", {\n      zkid = 1\n    })}",
-                                                                        :destination "${local.home_dir}/zookeeper/data/myid"}
-                                                                       {:content "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
-                                                                        :destination "/tmp/rama.yaml"}]}
-                                                               {:remote-exec [{:script "./start.sh"}]}],
-                                                 :triggers {:zookeeper_id "${aws_instance.rama.id}"}}]}},
-              :terraform [{:required_providers [{:aws {:source "hashicorp/aws",
-                                                       :version "~> 4.1.0"},
-                                                 :cloudinit {:source "hashicorp/cloudinit",
-                                                             :version "~> 2.2.0"}}]}],
-              :variable {:ami_id [{:type "string"}],
-                         :rama_source_path [{:type "string"}],
-                         :key_name [{:type "string"}],
-                         :license_source_path [{:default "", :type "string"}],
-                         :instance_type [{:type "string"}],
-                         :username [{:type "string"}],
-                         :private_ssh_key [{:default nil, :type "string"}],
-                         :region [{:type "string"}],
-                         :use_private_ip [{:default false, :type "bool"}],
-                         :volume_size_gb [{:default 100, :type "number"}],
-                         :cluster_name [{:type "string"}],
-                         :vpc_security_group_ids [{:type "list(string)"}],
-                         :zookeeper_url [{:type "string"}]}})
+(def content
+  (-> content-opts
+      ((fn [opts]
+         {:data {:cloudinit_config {:rama_config [{:part [{:content "${file(\"../common/setup-disks.sh\")}",
+                                                           :content_type "text/x-shellscript"}
+                                                          {:content "${templatefile(\"./cloud-config.yaml\", {\n      username = var.username,\n\n      # conductor.service\n      conductor_service_name             = \"conductor\",\n      conductor_service_file_destination = \"${local.systemd_dir}/conductor.service\",\n      conductor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Conductor\",\n        command     = \"conductor\"\n      })\n      # rama.license\n      license_file_contents = var.license_source_path != \"\" ? file(var.license_source_path) : \"\",\n      # Manage rama.zip script\n      unpack_rama_contents = templatefile(\"../common/conductor/unpack-rama.sh\", {\n        username = var.username,\n      })\n\n      supervisor_service_file_destination = \"${local.systemd_dir}/supervisor.service\",\n      supervisor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Supervisor\"\n        command     = \"supervisor\"\n      })\n      service_name = \"supervisor\"\n    })}",
+                                                           :content_type "text/cloud-config"}]}]},
+                 :http {:myip [{:url "http://ipv4.icanhazip.com"}]}},
+          :locals [{:home_dir "/home/${var.username}",
+                    :systemd_dir "/etc/systemd/system",
+                    :vpc_security_group_ids "${var.vpc_security_group_ids}"}],
+          :output {:conductor_ui [{:value "http://%{if var.use_private_ip}${aws_instance.rama.private_ip}%{else}${aws_instance.rama.public_ip}%{endif}:8888"}],
+                   :ec2_console [{:value "https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#Instances:tag:Name=${var.cluster_name}-cluster-supervisor,${var.cluster_name}-cluster-conductor,${var.cluster_name}-cluster-zookeeper;instanceState=running;sort=desc:tag:Name"}],
+                   :rama_ip [{:value "${var.use_private_ip ? aws_instance.rama.private_ip : aws_instance.rama.public_ip}"}]},
+          :provider {:aws [{:max_retries 25, :region "${var.region}"}],
+                     :cloudinit [{}]},
+          :resource {:aws_instance {:rama [{:tags {:Name "${terraform.workspace}-rama"},
+                                            :provisioner {:file [{:content "${templatefile(\"../common/zookeeper/zookeeper.service\", {\n      username = var.username\n    })}",
+                                                                  :destination "${local.home_dir}/zookeeper.service"}]
+                                                          :local-exec [{:command "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
+                                                                        :when "create"}],
+                                                          :remote-exec [{:inline ["ls"]}
+                                                                        {:inline ["cd /data/rama"
+                                                                                  "chmod +x unpack-rama.sh"
+                                                                                  "./unpack-rama.sh"]}]},
+                                            :key_name "${var.key_name}",
+                                            :instance_type "${var.instance_type}",
+                                            :ami "${var.ami_id}",
+                                            :root_block_device [{:volume_size "${var.volume_size_gb}"}],
+                                            :vpc_security_group_ids "${local.vpc_security_group_ids}",
+                                            :connection [{:host "${var.use_private_ip ? self.private_ip : self.public_ip}",
+                                                          :private_key "${var.private_ssh_key != null ? file(var.private_ssh_key) : null}",
+                                                          :type "ssh",
+                                                          :user "${var.username}"}],
+                                            :user_data "${data.cloudinit_config.rama_config.rendered}"}]},
+                     :null_resource {:local [{:provisioner {:local-exec [{:command "${format(\n      \"cat <<\\\"EOF\\\" > \\\"%s\\\"\\n%s\\nEOF\",\n      \"/tmp/deployment.yaml\",\n      templatefile(\"../common/local.yaml\", {\n        zk_public_ip         = aws_instance.rama.public_ip\n        zk_private_ip        = aws_instance.rama.private_ip\n        conductor_public_ip  = aws_instance.rama.public_ip\n        conductor_private_ip = aws_instance.rama.private_ip\n      })\n    )}"}]}}],
+                                     :rama [{:connection [{:host "${var.use_private_ip ? aws_instance.rama.private_ip : aws_instance.rama.public_ip}",
+                                                           :private_key "${var.private_ssh_key != null ? file(var.private_ssh_key) : null}",
+                                                           :type "ssh",
+                                                           :user "${var.username}"}],
+                                             :provisioner [{:file [{:destination "${local.home_dir}/setup.sh",
+                                                                    :source "../common/zookeeper/setup.sh"}]}
+                                                           {:remote-exec [{:inline ["chmod +x ${local.home_dir}/setup.sh"
+                                                                                    "${local.home_dir}/setup.sh ${var.zookeeper_url}"]}]}
+                                                           {:file [{:content "${templatefile(\"../common/zookeeper/zoo.cfg\", {\n      num_servers    = 1,\n      zk_private_ips = [aws_instance.rama.private_ip],\n      server_index   = 0\n      username       = var.username\n    })}",
+                                                                    :destination "${local.home_dir}/zookeeper/conf/zoo.cfg"}
+                                                                   {:content "${templatefile(\"../common/zookeeper/myid\", {\n      zkid = 1\n    })}",
+                                                                    :destination "${local.home_dir}/zookeeper/data/myid"}
+                                                                   {:content "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
+                                                                    :destination "/tmp/rama.yaml"}]}
+                                                           {:remote-exec [{:script "./start.sh"}]}],
+                                             :triggers {:zookeeper_id "${aws_instance.rama.id}"}}]}},
+          :terraform [{:required_providers [{:aws {:source "hashicorp/aws",
+                                                   :version "~> 4.1.0"},
+                                             :cloudinit {:source "hashicorp/cloudinit",
+                                                         :version "~> 2.2.0"}}]}],
+          :variable {:ami_id [{:type "string"}],
+                     :rama_source_path [{:type "string"}],
+                     :key_name [{:type "string"}],
+                     :license_source_path [{:default "", :type "string"}],
+                     :instance_type [{:type "string"}],
+                     :username [{:type "string"}],
+                     :private_ssh_key [{:default nil, :type "string"}],
+                     :region [{:type "string"}],
+                     :use_private_ip [{:default false, :type "bool"}],
+                     :volume_size_gb [{:default 100, :type "number"}],
+                     :cluster_name [{:type "string"}],
+                     :vpc_security_group_ids [{:type "list(string)"}],
+                     :zookeeper_url [{:type "string"}]}}))))

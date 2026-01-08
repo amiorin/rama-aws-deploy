@@ -3,7 +3,7 @@
     "cloudinit_config" : {
       "rama_config" : [ {
         "part" : [ {
-          "content" : "${templatefile(\"../common/setup-disks.sh\", {\n      username = var.username\n    })}",
+          "content" : "${file(\"../common/setup-disks.sh\")}",
           "content_type" : "text/x-shellscript"
         }, {
           "content" : "${templatefile(\"./cloud-config.yaml\", {\n      username = var.username,\n\n      # conductor.service\n      conductor_service_name             = \"conductor\",\n      conductor_service_file_destination = \"${local.systemd_dir}/conductor.service\",\n      conductor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Conductor\",\n        command     = \"conductor\"\n      })\n      # rama.license\n      license_file_contents = var.license_source_path != \"\" ? file(var.license_source_path) : \"\",\n      # Manage rama.zip script\n      unpack_rama_contents = templatefile(\"../common/conductor/unpack-rama.sh\", {\n        username = var.username,\n      })\n\n      supervisor_service_file_destination = \"${local.systemd_dir}/supervisor.service\",\n      supervisor_service_file_contents = templatefile(\"../common/systemd-service-template.service\", {\n        description = \"Rama Supervisor\"\n        command     = \"supervisor\"\n      })\n      service_name = \"supervisor\"\n    })}",

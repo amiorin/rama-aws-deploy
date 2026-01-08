@@ -16,8 +16,8 @@
                      ::render/templates [{:template "alpha"
                                           :target-dir dir
                                           :overwrite true
-                                          :transform [["root"
-                                                       :raw]
+                                          :data-fn (constantly content-opts)
+                                          :transform [["root"]
                                                       ['alpha/render "rama-cluster/single"
                                                        {:single "main.tf.json"}
                                                        :raw]

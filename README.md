@@ -85,6 +85,9 @@ Add Malli to validate `RamaOpts`, eventually replacing `rama.tfvars` and `auth.t
 
 A bug was identified in the `provisioner` block where `file` and `remote-exec` actions were being grouped together, losing their intended order. Changing the `provisioner ` block from a map to a vector enables us to preserve the correct order of operations.
 
+### Step 12
+First Terraform `templatefile` replaced with Selmer templates (`setup-disk.sh`).
+
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
 
