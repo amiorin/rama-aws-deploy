@@ -75,6 +75,9 @@ Once converted, delete the original `main.tf` and generate the `main.tf.json` pr
 ### Step 9
 Resolve the syntax errors introduced during the HCL-to-EDN conversion. Once fixed, the build will be "green" (successful) again.
 
+### Step 10
+Add Malli to validate `RamaOpts`, eventually replacing `rama.tfvars` and `auth.tfvars`.
+
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
 
