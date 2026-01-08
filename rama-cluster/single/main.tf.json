@@ -92,11 +92,17 @@
           "type" : "ssh",
           "user" : "${var.username}"
         } ],
-        "provisioner" : {
+        "provisioner" : [ {
           "file" : [ {
             "destination" : "${local.home_dir}/setup.sh",
             "source" : "../common/zookeeper/setup.sh"
-          }, {
+          } ]
+        }, {
+          "remote-exec" : [ {
+            "inline" : [ "chmod +x ${local.home_dir}/setup.sh", "${local.home_dir}/setup.sh ${var.zookeeper_url}" ]
+          } ]
+        }, {
+          "file" : [ {
             "content" : "${templatefile(\"../common/zookeeper/zoo.cfg\", {\n      num_servers    = 1,\n      zk_private_ips = [aws_instance.rama.private_ip],\n      server_index   = 0\n      username       = var.username\n    })}",
             "destination" : "${local.home_dir}/zookeeper/conf/zoo.cfg"
           }, {
@@ -105,13 +111,12 @@
           }, {
             "content" : "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
             "destination" : "/tmp/rama.yaml"
-          } ],
+          } ]
+        }, {
           "remote-exec" : [ {
-            "inline" : [ "chmod +x ${local.home_dir}/setup.sh", "${local.home_dir}/setup.sh ${var.zookeeper_url}" ]
-          }, {
             "script" : "./start.sh"
           } ]
-        },
+        } ],
         "triggers" : {
           "zookeeper_id" : "${aws_instance.rama.id}"
         }

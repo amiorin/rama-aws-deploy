@@ -4,4 +4,4 @@
 !.big-config/resources/alpha/root/.keep
 !.big-config/.dir-locals.el
 terraform.tfstate.d
-rama.tfvars
+rama.tfvars.json

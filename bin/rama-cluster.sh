@@ -46,11 +46,11 @@ fi
 echo "Performing ${OP_NAME} ${CLUSTER_NAME}"
 
 find_rama_tfvars_rec () {
-  if test -f "./rama.tfvars"; then
-    realpath "./rama.tfvars"
+  if test -f "./rama.tfvars.json"; then
+    realpath "./rama.tfvars.json"
   else
     if [ "$(pwd)" = "/" ]; then
-      echo "[ERROR] Could not find rama.tfvars file" >&2
+      echo "[ERROR] Could not find rama.tfvars.json file" >&2
       exit 1
     else
       pushd ..
@@ -67,10 +67,7 @@ find_rama_tfvars () {
 }
 
 get_tfvars_value () {
-  # get line
-  line=$(grep $2 $1)
-  # get the value, then trim leading/trailing whitespace
-  echo "${line#*=}" | xargs
+  jq -r .$1 $2
 }
 
 run_destroy () {
@@ -80,7 +77,6 @@ run_destroy () {
   terraform destroy -auto-approve \
     -parallelism=50 \
     -var-file "$tfvars" \
-    -var-file ~/.rama/auth.tfvars \
     -var="cluster_name=$CLUSTER_NAME"
   terraform workspace select default
   terraform workspace delete "${WORKSPACE_NAME}"
@@ -122,7 +118,6 @@ run_deploy () {
     -auto-approve \
     -parallelism=30 \
     -var-file "$tfvars" \
-    -var-file ~/.rama/auth.tfvars \
     -var="cluster_name=${CLUSTER_NAME}" \
     $tf_apply_args
 
@@ -134,7 +129,7 @@ run_deploy () {
   # Save the outputs to the cluster directory
   terraform output -json > ${HOME_CLUSTER_DIR}/outputs.json
 
-  rama_source_path="$(get_tfvars_value $tfvars rama_source_path)"
+  rama_source_path="$(get_tfvars_value rama_source_path $tfvars)"
   (
       cp ${rama_source_path} ${HOME_CLUSTER_DIR}/rama.zip
       cp ${tfvars} ${HOME_CLUSTER_DIR}
@@ -161,7 +156,6 @@ run_plan () {
   terraform init
   terraform plan \
     -var-file "$tfvars" \
-    -var-file ~/.rama/auth.tfvars \
     -var="cluster_name=${CLUSTER_NAME}" \
     $tf_apply_args
 }

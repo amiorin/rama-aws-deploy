@@ -78,6 +78,13 @@ Resolve the syntax errors introduced during the HCL-to-EDN conversion. Once fixe
 ### Step 10
 Add Malli to validate `RamaOpts`, eventually replacing `rama.tfvars` and `auth.tfvars`.
 
+### Step 11
+`rama.tfvars` and `auth.tfvars` have been merged and replaced by the JSON version. `rama-cluster.sh` has been updated to work with `rama.tfvars.json` instead of `rama.tfvars`.
+
+> Note: The conversion from HCL to EDN is not infallible.
+
+A bug was identified in the `provisioner` block where `file` and `remote-exec` actions were being grouped together, losing their intended order. Changing the `provisioner ` block from a map to a vector enables us to preserve the correct order of operations.
+
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
 

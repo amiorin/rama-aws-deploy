@@ -1,4 +1,63 @@
-(ns single)
+(ns single
+  (:require
+   [clojure.string :as str]
+   [malli.core :as m]
+   [malli.error :as me]
+   [malli.transform :as mt]))
+
+(def RamaOptsSchema
+  [:map {:closed true}
+   [:region [:string {:min 1}]]
+
+   [:cluster_name [:string {:min 1}]]
+   [:key_name [:string {:min 1}]]
+
+   [:username [:string {:min 1}]]
+   [:vpc_security_group_ids [:+ [:string {:min 1}]]]
+
+   [:rama_source_path [:string {:min 1}]]
+   [:license_source_path {:optional true} [:string {:default ""}]]
+   [:zookeeper_url [:string {:min 1}]]
+
+   [:ami_id [:string {:min 1}]]
+
+   [:instance_type [:string {:min 1}]]
+
+   [:volume_size_gb {:optional true} [:int {:default 100}]]
+
+   [:use_private_ip {:optional true} [:boolean {:default false}]]
+
+   [:private_ssh_key {:optional true :default nil} [:maybe [:string {:min 1}]]]])
+
+(defn malli-assert
+  [schema-name schema instance]
+  (try
+    (->> (m/decode schema instance (mt/default-value-transformer {::mt/add-optional-keys true}))
+         (m/assert schema))
+    (catch Exception e
+      (-> e
+          ex-data
+          :data
+          :explain
+          me/humanize
+          (->> (reduce-kv (fn [a k v]
+                            (let [err (str/join ", " v)]
+                              (if a
+                                (format "%s; `%s` -> `%s`" a k err)
+                                (format "Error in validating %s: `%s` -> `%s`" schema-name k err)))) nil))))))
+
+(def content-opts
+  (let [rama-opts {:ami_id "ami-0bc2b0fec3eaef8eb"
+                   :rama_source_path "/Users/amiorin/.rama/cache/rama-1.4.0.zip"
+                   :cluster_name "cesar-ford"
+                   :key_name "id_ed25519"
+                   :instance_type "m6g.medium"
+                   :username "ec2-user"
+                   :region "us-west-2"
+                   :use_private_ip true
+                   :vpc_security_group_ids ["sg-0e93b1629988a79fd"]
+                   :zookeeper_url "https://dlcdn.apache.org/zookeeper/zookeeper-3.8.5/apache-zookeeper-3.8.5-bin.tar.gz"}]
+    (malli-assert "RamaOpts" RamaOptsSchema rama-opts)))
 
 (def content {:data {:cloudinit_config {:rama_config [{:part [{:content "${templatefile(\"../common/setup-disks.sh\", {\n      username = var.username\n    })}",
                                                                :content_type "text/x-shellscript"}
@@ -15,8 +74,9 @@
                          :cloudinit [{}]},
               :resource {:aws_instance {:rama [{:tags {:Name "${terraform.workspace}-rama"},
                                                 :provisioner {:file [{:content "${templatefile(\"../common/zookeeper/zookeeper.service\", {\n      username = var.username\n    })}",
-                                                                      :destination "${local.home_dir}/zookeeper.service"}],                                                 :local-exec [{:command "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
-                                                                                                                                                                                          :when "create"}],
+                                                                      :destination "${local.home_dir}/zookeeper.service"}]
+                                                              :local-exec [{:command "../common/upload_rama.sh ${var.rama_source_path} ${var.username} %{if var.use_private_ip}${self.private_ip}%{else}${self.public_ip}%{endif}",
+                                                                            :when "create"}],
                                                               :remote-exec [{:inline ["ls"]}
                                                                             {:inline ["cd /data/rama"
                                                                                       "chmod +x unpack-rama.sh"
@@ -36,17 +96,17 @@
                                                                :private_key "${var.private_ssh_key != null ? file(var.private_ssh_key) : null}",
                                                                :type "ssh",
                                                                :user "${var.username}"}],
-                                                 :provisioner {:file [{:destination "${local.home_dir}/setup.sh",
-                                                                       :source "../common/zookeeper/setup.sh"}
-                                                                      {:content "${templatefile(\"../common/zookeeper/zoo.cfg\", {\n      num_servers    = 1,\n      zk_private_ips = [aws_instance.rama.private_ip],\n      server_index   = 0\n      username       = var.username\n    })}",
-                                                                       :destination "${local.home_dir}/zookeeper/conf/zoo.cfg"}
-                                                                      {:content "${templatefile(\"../common/zookeeper/myid\", {\n      zkid = 1\n    })}",
-                                                                       :destination "${local.home_dir}/zookeeper/data/myid"}
-                                                                      {:content "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
-                                                                       :destination "/tmp/rama.yaml"}],
-                                                               :remote-exec [{:inline ["chmod +x ${local.home_dir}/setup.sh"
-                                                                                       "${local.home_dir}/setup.sh ${var.zookeeper_url}"]}
-                                                                             {:script "./start.sh"}]},
+                                                 :provisioner [{:file [{:destination "${local.home_dir}/setup.sh",
+                                                                        :source "../common/zookeeper/setup.sh"}]}
+                                                               {:remote-exec [{:inline ["chmod +x ${local.home_dir}/setup.sh"
+                                                                                        "${local.home_dir}/setup.sh ${var.zookeeper_url}"]}]}
+                                                               {:file [{:content "${templatefile(\"../common/zookeeper/zoo.cfg\", {\n      num_servers    = 1,\n      zk_private_ips = [aws_instance.rama.private_ip],\n      server_index   = 0\n      username       = var.username\n    })}",
+                                                                        :destination "${local.home_dir}/zookeeper/conf/zoo.cfg"}
+                                                                       {:content "${templatefile(\"../common/zookeeper/myid\", {\n      zkid = 1\n    })}",
+                                                                        :destination "${local.home_dir}/zookeeper/data/myid"}
+                                                                       {:content "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
+                                                                        :destination "/tmp/rama.yaml"}]}
+                                                               {:remote-exec [{:script "./start.sh"}]}],
                                                  :triggers {:zookeeper_id "${aws_instance.rama.id}"}}]}},
               :terraform [{:required_providers [{:aws {:source "hashicorp/aws",
                                                        :version "~> 4.1.0"},
