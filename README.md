@@ -13,6 +13,9 @@ First read the original [README.md](README-upstream.md)
   - [Step 11](#step-11)
   - [Step 12](#step-12)
   - [Step 13](#step-13)
+  - [Step 14](#step-14)
+  - [Step 15](#step-15)
+  - [Step 16](#step-16)
 - [Customizations](#customizations)
   - [AWS](#aws)
   - [Tailscale](#tailscale)
@@ -133,6 +136,9 @@ bin/rama-cluster.sh deploy --singleNode cesar-ford
 # To:
 bb cluster deploy --singleNode cesar-ford
 ```
+
+### Step 16
+Refactor the code into a workflow that combines Terraform and Ansible.
 
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
