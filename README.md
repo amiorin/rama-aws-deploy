@@ -9,6 +9,10 @@ First read the original [README.md](README-upstream.md)
     - [Command updates](#command-updates)
   - [Step 8](#step-8)
   - [Step 9](#step-9)
+  - [Step 10](#step-10)
+  - [Step 11](#step-11)
+  - [Step 12](#step-12)
+  - [Step 13](#step-13)
 - [Customizations](#customizations)
   - [AWS](#aws)
   - [Tailscale](#tailscale)
@@ -87,6 +91,19 @@ A bug was identified in the `provisioner` block where `file` and `remote-exec` a
 
 ### Step 12
 First Terraform `templatefile` replaced with Selmer templates (`setup-disk.sh`).
+
+### Step 13
+Create a BigConfig project within the `.multi` directory using the Multi template:
+
+```sh
+clojure -Tbig-config multi :target-dir .multi
+```
+
+We want to replace the Terraform provisioner and cloud-init with an ansible step. The Ansible template is also a good starting point.
+
+```sh
+bb render-ansible exec -- gamma prod ansible-playbook main.yml
+```
 
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.

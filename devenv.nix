@@ -2,6 +2,7 @@
 
 {
   languages.clojure.enable = true;
+  languages.ansible.enable = true;
   languages.terraform.enable = true;
   packages = [
     pkgs.jet

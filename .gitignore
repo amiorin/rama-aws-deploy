@@ -1,4 +1,5 @@
 .*
+!.multi
 !.envrc
 !.big-config
 !.big-config/.dir-locals.el
