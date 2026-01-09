@@ -51,7 +51,7 @@
                    :rama_source_path "/Users/amiorin/.rama/cache/rama-1.4.0.zip"
                    :cluster_name "cesar-ford"
                    :key_name "id_ed25519"
-                   :instance_type "m6g.medium"
+                   :instance_type "t4g.small"
                    :username "ec2-user"
                    :region "us-west-2"
                    :use_private_ip true
@@ -108,8 +108,7 @@
                                                                    {:content "${templatefile(\"../common/zookeeper/myid\", {\n      zkid = 1\n    })}",
                                                                     :destination "${local.home_dir}/zookeeper/data/myid"}
                                                                    {:content "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
-                                                                    :destination "/tmp/rama.yaml"}]}
-                                                           {:remote-exec [{:script "./start.sh"}]}],
+                                                                    :destination "/tmp/rama.yaml"}]}]
                                              :triggers {:zookeeper_id "${aws_instance.rama.id}"}}]}},
           :terraform [{:required_providers [{:aws {:source "hashicorp/aws",
                                                    :version "~> 4.1.0"},

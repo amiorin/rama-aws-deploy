@@ -105,6 +105,24 @@ We want to replace the Terraform provisioner and cloud-init with an ansible step
 bb render-ansible exec -- gamma prod ansible-playbook main.yml
 ```
 
+### Step 14
+Using a cheaper instance for development. `start.sh` has been moved to Ansible. The Ansible inventory is populated from `.rama/[cluster name]`/outputs.json. The cluster name is hard-coded for now.
+
+``` clojure
+(defn data-fn
+  [{:keys [profile] :as data} _]
+  (let [file-path "/Users/amiorin/.rama/cesar-ford/outputs.json"
+        rama-ip (-> (json/parse-string (slurp file-path) true)
+                    :rama_ip
+                    :value)]
+    (merge data
+           {:rama-ip rama-ip
+            :region "eu-west-1"
+            :aws-account-id (case profile
+                              "dev" "111111111111"
+                              "prod" "222222222222")})))
+```
+
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
 

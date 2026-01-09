@@ -3,7 +3,8 @@ supervisor.port.range:
   - 21000
 
 conductor.child.opts: "-XX:+PrintGC -Xloggc:logs/conductor-gc.log"
-worker.child.opts: "-Xms8192m -Xmx8192m -Xmn4096m -XX:SurvivorRatio=4 -XX:MaxTenuringThreshold=6 -XX:+PrintGC -Xloggc:logs/worker-%ID%-gc.log"
+#worker.child.opts: "-Xms8192m -Xmx8192m -Xmn4096m -XX:SurvivorRatio=4 -XX:MaxTenuringThreshold=6 -XX:+PrintGC -Xloggc:logs/worker-%ID%-gc.log"
+worker.child.opts: "-XX:+PrintGC -Xloggc:logs/worker-%ID%-gc.log"
 
 local.dir: "local-rama-data"
 

@@ -1,7 +1,7 @@
 .*
+!.big-config
 !.multi
 !.envrc
-!.big-config
-!.big-config/.dir-locals.el
+!.dir-locals.el
 terraform.tfstate.d
 rama.tfvars.json

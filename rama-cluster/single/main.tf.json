@@ -112,10 +112,6 @@
             "content" : "${templatefile(\"./rama.yaml\", {\n      zk_private_ip         = aws_instance.rama.private_ip\n      conductor_private_ip  = aws_instance.rama.private_ip\n      supervisor_private_ip = aws_instance.rama.private_ip\n    })}",
             "destination" : "/tmp/rama.yaml"
           } ]
-        }, {
-          "remote-exec" : [ {
-            "script" : "./start.sh"
-          } ]
         } ],
         "triggers" : {
           "zookeeper_id" : "${aws_instance.rama.id}"
