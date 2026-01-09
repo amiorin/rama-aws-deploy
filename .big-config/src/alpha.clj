@@ -4,14 +4,52 @@
    [big-config.render :as render]
    [big-config.run :as run]
    [big-config.step :as step]
+   [big-config.step-fns :as step-fns]
    [cheshire.core :as json]
+   [clojure.string :as str]
    [single :refer [content content-opts]]))
 
-(defn run-steps [s opts & step-fns]
-  (let [{:keys [_module _profile]} (step/parse-module-and-profile s)
-        dir (format "..")
-        opts (merge opts
-                    {::run/shell-opts {:dir dir
+(defn render [kw _data]
+  (case kw
+    :single (json/generate-string content {:pretty true})
+    :single-opts (json/generate-string content-opts {:pretty true})))
+
+(defn cluster
+  [s & opts]
+  (let [opts (first opts)
+        {:keys [cluster-name]} (loop [xs s
+                                      token nil
+                                      action nil
+                                      single false]
+                                 (cond
+                                   (string? xs)
+                                   (let [xs (-> (str/trim xs)
+                                                (str/split #"\s+"))]
+                                     (recur (rest xs) (first xs) action single))
+
+                                   (#{"deploy" "destroy" "plan"} token)
+                                   (recur (rest xs) (first xs) token single)
+
+                                   (#{"--singleNode"} token)
+                                   (recur (rest xs) (first xs) action true)
+
+                                   :else
+                                   {:action action
+                                    :single single
+                                    :cluster-name token
+                                    :terraform-opts xs}))
+        run-steps (step/->run-steps)
+        [_ last-step] (run-steps)
+        step-fns [step/print-step-fn
+                  (step-fns/->exit-step-fn last-step)
+                  (step-fns/->print-error-step-fn last-step)]
+        dir ".."
+        opts (merge (or opts {})
+                    {::step/steps ["render" "exec"]
+                     ::run/cmds [(format "bin/rama-cluster.sh %s" s)]
+                     ::step/module "terraform"
+                     ::step/profile cluster-name
+                     ::run/shell-opts {:dir dir
                                        :extra-env {"AWS_PROFILE" "default"}}
                      ::render/templates [{:template "alpha"
                                           :target-dir dir
@@ -24,14 +62,7 @@
                                                       ['alpha/render
                                                        {:single-opts "rama.tfvars.json"}
                                                        :raw]]}]})]
-    (if step-fns
-      (apply step/run-steps s opts step-fns)
-      (step/run-steps s opts))))
+    (run-steps step-fns opts)))
 
 (comment
-  (run-steps "render exec -- alpha prod bin/rama-cluster.sh plan --singleNode cesar-ford" {::bc/env :repl}))
-
-(defn render [kw _data]
-  (case kw
-    :single (json/generate-string content {:pretty true})
-    :single-opts (json/generate-string content-opts {:pretty true})))
+  (cluster "deploy --singleNode cesar-ford" {::bc/env :repl}))

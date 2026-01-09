@@ -123,6 +123,17 @@ Using a cheaper instance for development. `start.sh` has been moved to Ansible. 
                               "prod" "222222222222")})))
 ```
 
+### Step 15
+Moving the provisioning from Terraform to Ansible requires sharing the cluster name and the EC2 instance's IP address with the Ansible workflow. The cluster name is provided via bin/rama-cluster.sh. We parse the command line invocation to extract the cluster name, integrating the Terraform workflow with the Ansible one.
+
+``` sh
+# From:
+bin/rama-cluster.sh deploy --singleNode cesar-ford
+
+# To:
+bb cluster deploy --singleNode cesar-ford
+```
+
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
 
