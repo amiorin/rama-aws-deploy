@@ -2,11 +2,11 @@
   (:require
    [big-config :as bc]
    [big-config.core :as core]
-   [big-config.utils :as utils]
    [big-config.render :as render]
    [big-config.run :as run]
    [big-config.step :as step]
    [big-config.step-fns :as step-fns]
+   [big-config.utils :as utils]
    [cheshire.core :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -19,37 +19,87 @@
 
 (defn parse-s
   [{:keys [::s] :as opts}]
-  (let [{:keys [cluster-name action]} (loop [xs s
-                                             token nil
-                                             action nil
-                                             single false]
-                                        (cond
-                                          (string? xs)
-                                          (let [xs (-> (str/trim xs)
-                                                       (str/split #"\s+"))]
-                                            (recur (rest xs) (first xs) action single))
+  (let [all-actions #{"deploy" "destroy" "plan" "ansible"}
+        args (loop [xs s
+                    token nil
+                    actions []
+                    single false
+                    cluster-name nil
+                    terraform-args []
+                    ansible-args-separator false
+                    ansible-args []]
+               (cond
+                 (string? xs)
+                 (let [xs (-> (str/trim xs)
+                              (str/split #"\s+"))]
+                   (recur (rest xs) (first xs) actions single cluster-name terraform-args ansible-args-separator ansible-args))
 
-                                          (#{"deploy" "destroy" "plan"} token)
-                                          (recur (rest xs) (first xs) token single)
+                 (all-actions token)
+                 (let [actions (into actions [token])]
+                   (recur (rest xs) (first xs) actions single cluster-name terraform-args ansible-args-separator ansible-args))
 
-                                          (#{"--singleNode"} token)
-                                          (recur (rest xs) (first xs) action true)
+                 (nil? (seq actions))
+                 (throw (ex-info (format "At least one action must be defined (%s)" (str/join "|" actions)) {:opts opts}))
 
-                                          :else
-                                          {:cluster-name token
-                                           :action action}))]
-    (merge opts {::cluster-name cluster-name
-                 ::action action
-                 ::bc/exit 0
-                 ::bc/err nil})))
+                 (#{"--singleNode"} token)
+                 (recur (rest xs) (first xs) actions true cluster-name terraform-args ansible-args-separator ansible-args)
+
+                 (all-actions token)
+                 (throw (ex-info "Actions must be defined before `--singleNone`" {:opts opts}))
+
+                 (nil? cluster-name)
+                 (recur (rest xs) (first xs) actions single token terraform-args ansible-args-separator ansible-args)
+
+                 (= "--" token)
+                 (recur (rest xs) (first xs) actions single cluster-name terraform-args true ansible-args)
+
+                 (and token (not ansible-args-separator))
+                 (let [terraform-args (into terraform-args [token])]
+                   (recur (rest xs) (first xs) actions single cluster-name terraform-args ansible-args-separator ansible-args))
+
+                 (and token ansible-args-separator)
+                 (let [ansible-args (into ansible-args [token])]
+                   (recur (rest xs) (first xs) actions single cluster-name terraform-args ansible-args-separator ansible-args))
+
+                 :else
+                 {::cluster-name cluster-name
+                  ::actions actions
+                  ::single single
+                  ::terraform-args terraform-args
+                  ::ansible-args ansible-args}))]
+    (merge opts args {::bc/exit 0
+                      ::bc/err nil})))
+
+(comment
+  (parse-s {::s "destroy plan deploy ansible --singleNode cesar-ford -- --tags focus"}))
+
+(defn terraform-cmd
+  [{:keys [::cluster-name
+           ::action
+           ::single
+           ::terraform-args]}]
+  (as-> ["bin/rama-cluster.sh"] $
+    (conj $ action)
+    (cond-> $
+      single (conj "--singleNode"))
+    (conj $ cluster-name)
+    (into $ terraform-args)
+    (str/join " " $)))
+
+(comment
+  (terraform-cmd {::cluster-name "cesar-ford"
+                  ::action "plan"
+                  ::single true
+                  ::terraform-args ["foo" "bar"]}))
 
 (defn terraform
-  [step-fns {:keys [::s ::cluster-name ::bc/env] :as opts}]
+  [step-fns {:keys [::cluster-name
+                    ::bc/env] :as opts}]
   (let [run-steps (step/->run-steps)
         dir ".."
         terraform-opts {::bc/env env
                         ::step/steps ["render" "exec"]
-                        ::run/cmds [(format "bin/rama-cluster.sh %s" s)]
+                        ::run/cmds [(terraform-cmd opts)]
                         ::step/module "terraform"
                         ::step/profile cluster-name
                         ::run/shell-opts {:dir dir
@@ -70,12 +120,12 @@
          (merge opts {::terraform-opts terraform-opts}))))
 
 (defn ansible
-  [step-fns {:keys [::cluster-name ::bc/env] :as opts}]
+  [step-fns {:keys [::cluster-name ::bc/env ::ansible-args] :as opts}]
   (let [run-steps (step/->run-steps)
         dir "dist"
         ansible-opts {::bc/env env
                       ::step/steps ["render" "exec"]
-                      ::run/cmds ["ansible-playbook main.yml"]
+                      ::run/cmds [(format "ansible-playbook main.yml %s" (str/join " " ansible-args))]
                       ::step/module "ansible"
                       ::step/profile cluster-name
                       ::run/shell-opts {:dir dir
@@ -122,20 +172,28 @@
         rama-cluster (core/->workflow {:first-step ::parse-s
                                        :wire-fn (fn [step step-fns]
                                                   (case step
-                                                    ::parse-s [parse-s ::terraform]
-                                                    ::terraform [(partial terraform step-fns) ::ansible]
-                                                    ::ansible [(partial ansible step-fns) ::end]
+                                                    ::parse-s [parse-s ::any]
+                                                    ::terraform [(partial terraform step-fns) ::any]
+                                                    ::ansible [(partial ansible step-fns) ::any]
                                                     ::end [identity]))
-                                       :next-fn (fn [step next-step {:keys [::action] :as opts}]
+                                       :next-fn (fn [step _ {:keys [::bc/exit ::actions] :as opts}]
                                                   (cond
                                                     (= step ::end) [nil opts]
-                                                    (and (= step ::terraform)
-                                                         (not= action "deploy")) [::end opts]
-                                                    :else
-                                                    (core/choice {:on-success next-step
-                                                                  :on-failure ::end
-                                                                  :opts opts})))})]
+
+                                                    (and (#{"plan" "deploy" "destroy"}
+                                                          (first actions))
+                                                         (= exit 0))
+                                                    [::terraform (merge opts {::actions (rest actions)
+                                                                              ::action (first actions)})]
+
+                                                    (and (#{"ansible"}
+                                                          (first actions))
+                                                         (= exit 0))
+                                                    [::ansible (merge opts {::actions (rest actions)
+                                                                            ::action (first actions)})]
+
+                                                    :else [::end opts]))})]
     (rama-cluster step-fns opts)))
 
 (comment
-  (utils/sort-nested-map (cluster "deploy --singleNode cesar-ford" {::bc/env :repl})))
+  (utils/sort-nested-map (cluster "destroy plan deploy ansible --singleNode cesar-ford" {::bc/env :repl})))
