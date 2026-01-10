@@ -16,6 +16,7 @@ First read the original [README.md](README-upstream.md)
   - [Step 14](#step-14)
   - [Step 15](#step-15)
   - [Step 16](#step-16)
+  - [Step 17](#step-17)
 - [Customizations](#customizations)
   - [AWS](#aws)
   - [Tailscale](#tailscale)
@@ -139,6 +140,9 @@ bb cluster deploy --singleNode cesar-ford
 
 ### Step 16
 Refactor the code into a workflow that combines Terraform and Ansible.
+
+### Step 17
+Ansible is now fully integrated with Terraform. The system parses `bb cluster deploy --singleNode cesar-ford` to retrieve the cluster name and `~/.rama/[cluster-name]/outputs.json` to retrieve the IP address. The Ansible inventory is created dynamically, and Ansible is invoked only if the action is deploy and Terraform succeeds.
 
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.

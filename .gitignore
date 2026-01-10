@@ -1,7 +1,7 @@
 .*
 !.big-config
-!.multi
 !.envrc
 !.dir-locals.el
 terraform.tfstate.d
 rama.tfvars.json
+/.big-config/dist/inventory.ini
