@@ -11,5 +11,7 @@
   help {:doc "the workflow help"
         :override-builtin true
         :task (println "Help")}
+  ssh {:doc "cluster"
+       :task (alpha/ssh *command-line-args*)}
   cluster {:doc "cluster"
            :task (cluster)}}}

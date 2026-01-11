@@ -1,5 +1,6 @@
 (ns alpha
   (:require
+   [babashka.process :as p]
    [big-config :as bc]
    [big-config.core :as core]
    [big-config.render :as render]
@@ -152,15 +153,18 @@
 (defn home-path [subpath]
   (io/file (System/getProperty "user.home") subpath))
 
+(defn rama-ip
+  [cluster-name]
+  (let [file-path (-> (format ".rama/%s/outputs.json" cluster-name)
+                      home-path)]
+    (-> (json/parse-string (slurp file-path) true)
+        :rama_ip
+        :value)))
+
 (defn ansible-data-fn
   [{:keys [cluster-name] :as data} _]
-  (let [file-path (-> (format ".rama/%s/outputs.json" cluster-name)
-                      home-path)
-        rama-ip (-> (json/parse-string (slurp file-path) true)
-                    :rama_ip
-                    :value)]
-    (merge data
-           {:rama-ip rama-ip})))
+  (merge data
+         {:rama-ip (rama-ip cluster-name)}))
 
 (defn cluster
   [s & opts]
@@ -196,4 +200,8 @@
     (rama-cluster step-fns opts)))
 
 (comment
-  (utils/sort-nested-map (cluster "destroy plan deploy ansible --singleNode cesar-ford" {::bc/env :repl})))
+  (utils/sort-nested-map (cluster "destroy ansible --singleNode cesar-ford --tags focus" {::bc/env :repl})))
+
+(defn ssh
+  [[cluster-name]]
+  (p/shell (format "ssh ec2-user@%s" (rama-ip cluster-name))))

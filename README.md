@@ -18,6 +18,7 @@ First read the original [README.md](README-upstream.md)
   - [Step 16](#step-16)
   - [Step 17](#step-17)
   - [Step 18](#step-18)
+  - [Step 19](#step-19)
 - [Customizations](#customizations)
   - [AWS](#aws)
   - [Tailscale](#tailscale)
@@ -154,6 +155,13 @@ bb cluster <action>+ --singleNode cesar-ford [terraform-args] -- [ansible-args]
 ```
 
 Available actions: `plan`, `deploy`, `destroy`, and `ansible`. This separation allows you to split hardware provisioning (Terraform) from software configuration (Ansible). During development, you can run the `ansible ` action in isolation; during integration, you can rebuild the entire cluster by combining `destroy`, `deploy`, and `ansible`.
+
+### Step 19
+Add ssh subcommand
+
+``` sh
+bb ssh cesar-ford
+```
 
 ## Customizations
 Follow these steps to configure AWS, Tailscale, SSH Agent, and Caddy for use with Rama.
